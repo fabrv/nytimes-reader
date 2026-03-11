@@ -40,21 +40,24 @@ async function fetchAllArticles(section: Section = "home"): Promise<Result<Artic
   return Promise.all(articlePromises);
 }
 
-const start = Bun.nanoseconds();
 
-const results = await fetchAllArticles("home");
-
-const end = Bun.nanoseconds();
-const durationMs = (end - start) / 1_000_000;
-
-const successful = results.filter((r) => r.isOk()).length;
-const failed = results.filter((r) => r.isErr()).length;
-
-console.log(`\nCompleted in ${durationMs.toFixed(2)}ms`);
-console.log(`Success: ${successful}, Failed: ${failed}`);
-
-const articles = results
-  .filter((r) => r.isOk())
-  .map((r) => r.value);
-
-await saveArticles(articles);
+export async function run() {
+  const start = Bun.nanoseconds();
+  
+  const results = await fetchAllArticles("home");
+  
+  const end = Bun.nanoseconds();
+  const durationMs = (end - start) / 1_000_000;
+  
+  const successful = results.filter((r) => r.isOk()).length;
+  const failed = results.filter((r) => r.isErr()).length;
+  
+  console.log(`\nCompleted in ${durationMs.toFixed(2)}ms`);
+  console.log(`Success: ${successful}, Failed: ${failed}`);
+  
+  const articles = results
+    .filter((r) => r.isOk())
+    .map((r) => r.value);
+  
+  await saveArticles(articles);
+}

@@ -307,3 +307,19 @@ p {
   line-height: 1.6;
   margin-bottom: 1em;
 }
+
+/* SSR navigation tap zones */
+.nav-prev,
+.nav-next {
+  position: fixed;
+  top: 0;
+  height: 100%;
+  width: 30%;
+  z-index: 10;
+  display: block;
+  text-decoration: none;
+}
+
+.nav-prev { left: 0; }
+.nav-next { right: 0; }
+
