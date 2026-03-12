@@ -1,24 +1,11 @@
 import { run } from "./index";
-import { paginateArticle, renderArticlesList, renderArticlePage } from "./prerender";
-import type { ArticleWithContent } from "./index";
 
 const date = new Date().toISOString().split("T")[0];
-const dataPath = `./articles/${date}/data.json`;
-const dataFile = Bun.file(dataPath);
+const dir = `./articles/${date}`;
 
-if (!(await dataFile.exists())) {
-  console.log(`No data file found at ${dataPath}. Running fetcher...`);
+if (!(await Bun.file(`${dir}/index.html`).exists())) {
+  console.log(`No data found for ${date}. Running fetcher...`);
   await run();
-}
-
-const articles: ArticleWithContent[] = await dataFile.json();
-
-function html(body: string): Response {
-  return new Response(body, { headers: { "Content-Type": "text/html; charset=utf-8" } });
-}
-
-function notFound(): Response {
-  return new Response("Not found", { status: 404 });
 }
 
 const server = Bun.serve({
@@ -27,28 +14,21 @@ const server = Bun.serve({
     "/styles.css": new Response(Bun.file("./src/ui/styles.css"), {
       headers: { "Content-Type": "text/css" },
     }),
+  },
+  fetch(req) {
+    const segments = new URL(req.url).pathname.split("/").filter(Boolean);
+    // /                        → index.html
+    // /article/N               → article/N/index.html
+    // /article/N/page/P        → article/N/page/P.html
+    const filePath = segments.length === 0
+      ? `${dir}/index.html`
+      : segments.length <= 2
+        ? `${dir}/${segments.join("/")}/index.html`
+        : `${dir}/${segments.join("/")}.html`;
 
-    "/": () => html(renderArticlesList(articles)),
-
-    // Cover page
-    "/article/:index": (req) => {
-      const index = Number(req.params.index);
-      const article = articles[index];
-      if (!article) return notFound();
-      const pages = paginateArticle(article);
-      return html(renderArticlePage(article, pages, 0, index));
-    },
-
-    // Subsequent pages
-    "/article/:index/page/:page": (req) => {
-      const index = Number(req.params.index);
-      const pageIndex = Number(req.params.page);
-      const article = articles[index];
-      if (!article) return notFound();
-      const pages = paginateArticle(article);
-      if (pageIndex < 0 || pageIndex >= pages.length) return notFound();
-      return html(renderArticlePage(article, pages, pageIndex, index));
-    },
+    return new Response(Bun.file(filePath), {
+      headers: { "Content-Type": "text/html; charset=utf-8" },
+    });
   },
 });
 
